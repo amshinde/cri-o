@@ -556,7 +556,7 @@ func (s *Server) runPodSandbox(ctx context.Context, req *pb.RunPodSandboxRequest
 
 	var ip string
 	if s.config.Config.ManageNetworkNSLifecycle {
-		ip, err = s.networkStart(sb)
+		ip, err = s.networkStart(sb, s.Runtime().Name())
 		if err != nil {
 			return nil, err
 		}
@@ -606,7 +606,7 @@ func (s *Server) runPodSandbox(ctx context.Context, req *pb.RunPodSandboxRequest
 	s.ContainerStateToDisk(container)
 
 	if !s.config.Config.ManageNetworkNSLifecycle {
-		ip, err = s.networkStart(sb)
+		ip, err = s.networkStart(sb, s.Runtime().Name())
 		if err != nil {
 			return nil, err
 		}

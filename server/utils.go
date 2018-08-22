@@ -156,12 +156,13 @@ func SysctlsFromPodAnnotation(annotation string) ([]Sysctl, error) {
 	return sysctls, nil
 }
 
-func newPodNetwork(sb *sandbox.Sandbox) ocicni.PodNetwork {
+func newPodNetwork(sb *sandbox.Sandbox, runtime string) ocicni.PodNetwork {
 	return ocicni.PodNetwork{
 		Name:      sb.KubeName(),
 		Namespace: sb.Namespace(),
 		ID:        sb.ID(),
 		NetNS:     sb.NetNsPath(),
+		Runtime:   runtime,
 	}
 }
 
