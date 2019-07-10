@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"plugin"
 	"sync"
 	"syscall"
 	"time"
@@ -34,9 +35,9 @@ const (
 	// BufSize is the size of buffers passed in to sockets
 	BufSize = 8192
 
-	// killContainerTimeout is the timeout that we wait for the container to
+	// KillContainerTimeout is the timeout that we wait for the container to
 	// be SIGKILLed.
-	killContainerTimeout = 2 * time.Minute
+	KillContainerTimeout = 2 * time.Minute
 
 	// minCtrStopTimeout is the minimal amount of time in seconds to wait
 	// before issuing a timeout regarding the proper termination of the
@@ -51,6 +52,14 @@ type Runtime struct {
 	runtimeImplMap      map[string]RuntimeImpl
 	runtimeImplMapMutex sync.RWMutex
 }
+
+const (
+	// RuntimeTypeOCI is the type representing the RuntimeOCI implementation.
+	RuntimeTypeOCI = "oci"
+
+	// RuntimeTypeVM is the type representing the RuntimeVM implementation.
+	RuntimeTypeVM = "vm"
+)
 
 // RuntimeImpl is an interface used by the caller to interact with the
 // container runtime. The purpose of this interface being to abstract
@@ -192,7 +201,24 @@ func (r *Runtime) newRuntimeImpl(c *Container) (RuntimeImpl, error) {
 	}
 
 	if rh.RuntimeType == RuntimeTypeVM {
-		return newRuntimeVM(rh.RuntimePath), nil
+		//return newRuntimeVM(rh.RuntimePath), nil
+		plug, err := plugin.Open(rh.RuntimePath)
+		if err != nil {
+			return nil, err
+		}
+
+		runtimeV2Plug, err := plug.Lookup("newRuntimeVM")
+		if err != nil {
+			return nil, err
+		}
+
+		runtimeV2, ok := runtimeV2Plug.(RuntimeImpl)
+		if !ok {
+			return nil, fmt.Errorf("Plugin does not implement cri-o Runtime Interface")
+		}
+
+		return runtimeV2, nil
+
 	}
 
 	// If the runtime type is different from "vm", then let's fallback

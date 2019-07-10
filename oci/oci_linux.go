@@ -118,7 +118,7 @@ func (r *runtimeOCI) containerStats(ctr *Container) (*ContainerStats, error) {
 	return stats, nil
 }
 
-func metricsToCtrStats(c *Container, m *cgroups.Metrics) *ContainerStats {
+func MetricsToCtrStats(c *Container, m *cgroups.Metrics) *ContainerStats {
 	var (
 		cpu         float64
 		cpuNano     uint64

@@ -47,14 +47,14 @@ type Container struct {
 	crioAnnotations    fields.Set
 	state              *ContainerState
 	metadata           *pb.ContainerMetadata
-	opLock             sync.RWMutex
-	spec               *specs.Spec
-	idMappings         *idtools.IDMappings
-	terminal           bool
-	stdin              bool
-	stdinOnce          bool
-	privileged         bool
-	created            bool
+	sync.RWMutex
+	spec       *specs.Spec
+	idMappings *idtools.IDMappings
+	terminal   bool
+	stdin      bool
+	stdinOnce  bool
+	privileged bool
+	created    bool
 }
 
 // ContainerVolume is a bind mount for the container.
@@ -113,6 +113,16 @@ func (c *Container) SetSpec(s *specs.Spec) {
 // Spec returns a copy of the spec for the container
 func (c *Container) Spec() specs.Spec {
 	return *c.spec
+}
+
+// Terminal returns if container uses a terminal
+func (c *Container) Terminal() bool {
+	return c.terminal
+}
+
+// Stdin returns if Container uses stdin
+func (c *Container) Stdin() bool {
+	return c.stdin
 }
 
 // GetStopSignal returns the container's own stop signal configured from the
@@ -255,8 +265,8 @@ func (c *Container) Metadata() *pb.ContainerMetadata {
 
 // State returns the state of the running container
 func (c *Container) State() *ContainerState {
-	c.opLock.RLock()
-	defer c.opLock.RUnlock()
+	c.RLock()
+	defer c.RUnlock()
 	return c.state
 }
 
@@ -308,8 +318,8 @@ func (c *Container) Created() bool {
 
 // SetStartFailed sets the container state appropriately after a start failure
 func (c *Container) SetStartFailed(err error) {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 	// adjust finished and started times
 	c.state.Finished, c.state.Started = c.state.Created, c.state.Created
 	if err != nil {

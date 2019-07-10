@@ -31,9 +31,6 @@ import (
 )
 
 const (
-	// RuntimeTypeOCI is the type representing the RuntimeOCI implementation.
-	RuntimeTypeOCI = "oci"
-
 	// Command line flag used to specify the run root directory
 	rootFlag = "--root"
 )
@@ -219,8 +216,8 @@ func (r *runtimeOCI) CreateContainer(c *Container, cgroupParent string) (err err
 
 // StartContainer starts a container.
 func (r *runtimeOCI) StartContainer(c *Container) error {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	if err := utils.ExecCmdWithStdStreams(os.Stdin, os.Stdout, os.Stderr,
 		r.path, rootFlag, r.root, "start", c.id); err != nil {
@@ -561,8 +558,8 @@ func waitContainerStop(ctx context.Context, c *Container, timeout time.Duration,
 
 // StopContainer stops a container. Timeout is given in seconds.
 func (r *runtimeOCI) StopContainer(ctx context.Context, c *Container, timeout int64) error {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	// Check if the process is around before sending a signal
 	process, err := findprocess.FindProcess(c.state.Pid)
@@ -602,7 +599,7 @@ func (r *runtimeOCI) StopContainer(ctx context.Context, c *Container, timeout in
 		}
 	}
 
-	return waitContainerStop(ctx, c, killContainerTimeout, false)
+	return waitContainerStop(ctx, c, KillContainerTimeout, false)
 }
 
 func checkProcessGone(c *Container) error {
@@ -622,8 +619,8 @@ func checkProcessGone(c *Container) error {
 
 // DeleteContainer deletes a container.
 func (r *runtimeOCI) DeleteContainer(c *Container) error {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	_, err := utils.ExecCmd(r.path, rootFlag, r.root, "delete", "--force", c.id)
 	return err
@@ -631,8 +628,8 @@ func (r *runtimeOCI) DeleteContainer(c *Container) error {
 
 // UpdateContainerStatus refreshes the status of the container.
 func (r *runtimeOCI) UpdateContainerStatus(c *Container) error {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	cmd := exec.Command(r.path, rootFlag, r.root, "state", c.id)
 	if v, found := os.LookupEnv("XDG_RUNTIME_DIR"); found {
@@ -703,8 +700,8 @@ func (r *runtimeOCI) UpdateContainerStatus(c *Container) error {
 
 // PauseContainer pauses a container.
 func (r *runtimeOCI) PauseContainer(c *Container) error {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	_, err := utils.ExecCmd(r.path, rootFlag, r.root, "pause", c.id)
 	return err
@@ -712,8 +709,8 @@ func (r *runtimeOCI) PauseContainer(c *Container) error {
 
 // UnpauseContainer unpauses a container.
 func (r *runtimeOCI) UnpauseContainer(c *Container) error {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	_, err := utils.ExecCmd(r.path, rootFlag, r.root, "resume", c.id)
 	return err
@@ -725,16 +722,16 @@ func (r *runtimeOCI) WaitContainerStateStopped(ctx context.Context, c *Container
 
 // ContainerStats provides statistics of a container.
 func (r *runtimeOCI) ContainerStats(c *Container) (*ContainerStats, error) {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	return r.containerStats(c)
 }
 
 // SignalContainer sends a signal to a container process.
 func (r *runtimeOCI) SignalContainer(c *Container, sig syscall.Signal) error {
-	c.opLock.Lock()
-	defer c.opLock.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
 	signalString, err := findStringInSignalMap(sig)
 	if err != nil {
