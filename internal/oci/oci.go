@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"plugin"
 	"sync"
 	"syscall"
 	"time"
@@ -145,6 +146,14 @@ func (r *Runtime) WaitContainerStateStopped(ctx context.Context, c *oci.Containe
 	return nil
 }
 
+const (
+	// RuntimeTypeOCI is the type representing the RuntimeOCI implementation.
+	//	RuntimeTypeOCI = "oci"
+
+	// RuntimeTypeVM is the type representing the RuntimeVM implementation.
+	RuntimeTypeVM = "vm"
+)
+
 func (r *Runtime) newRuntimeImpl(c *oci.Container) (oci.RuntimeImpl, error) {
 	// Define the current runtime handler as the default runtime handler.
 	rh := r.config.Runtimes[r.config.DefaultRuntime]
@@ -162,7 +171,23 @@ func (r *Runtime) newRuntimeImpl(c *oci.Container) (oci.RuntimeImpl, error) {
 	}
 
 	if rh.RuntimeType == RuntimeTypeVM {
-		return newRuntimeVM(rh.RuntimePath), nil
+		//return newRuntimeVM(rh.RuntimePath), nil
+		plug, err := plugin.Open(rh.RuntimePath)
+		if err != nil {
+			return nil, err
+		}
+
+		runtimeV2Plug, err := plug.Lookup("newRuntimeVM")
+		if err != nil {
+			return nil, err
+		}
+
+		runtimeV2, ok := runtimeV2Plug.(oci.RuntimeImpl)
+		if !ok {
+			return nil, fmt.Errorf("Plugin does not implement cri-o Runtime Interface")
+		}
+
+		return runtimeV2, nil
 	}
 
 	// If the runtime type is different from "vm", then let's fallback
