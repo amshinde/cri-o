@@ -139,9 +139,10 @@ type RootConfig struct {
 // RuntimeHandler represents each item of the "crio.runtime.runtimes" TOML
 // config table.
 type RuntimeHandler struct {
-	RuntimePath string `toml:"runtime_path"`
-	RuntimeType string `toml:"runtime_type"`
-	RuntimeRoot string `toml:"runtime_root"`
+	RuntimePath                  string `toml:"runtime_path"`
+	RuntimeType                  string `toml:"runtime_type"`
+	RuntimeRoot                  string `toml:"runtime_root"`
+	PrivilegedWithoutHostDevices bool   `toml:"privileged_without_host_devices"`
 }
 
 // Multiple runtime Handlers in a map

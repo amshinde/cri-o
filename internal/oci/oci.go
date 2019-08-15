@@ -75,6 +75,7 @@ type RuntimeImpl interface {
 	PortForwardContainer(*Container, int32, io.ReadWriter) error
 	ReopenContainerLog(*Container) error
 	WaitContainerStateStopped(context.Context, *Container) error
+	PrivilegedWithoutHostDevices(*Container) bool
 }
 
 // New creates a new Runtime with options provided
@@ -189,7 +190,7 @@ func (r *Runtime) newRuntimeImpl(c *Container) (RuntimeImpl, error) {
 	}
 
 	if rh.RuntimeType == RuntimeTypeVM {
-		return newRuntimeVM(rh.RuntimePath), nil
+		return newRuntimeVM(rh.RuntimePath, rh.PrivilegedWithoutHostDevices), nil
 	}
 
 	// If the runtime type is different from "vm", then let's fallback
@@ -223,6 +224,16 @@ func (r *Runtime) CreateContainer(c *Container, cgroupParent string) error {
 	r.runtimeImplMapMutex.Unlock()
 
 	return impl.CreateContainer(c, cgroupParent)
+}
+
+// PrivilegedWithoutHostDevices returns if host devices are skipped when run as privileged .
+func (r *Runtime) PrivilegedWithoutHostDevices(c *Container) bool {
+	impl, err := r.RuntimeImpl(c)
+	if err != nil {
+		return false
+	}
+
+	return impl.PrivilegedWithoutHostDevices(c)
 }
 
 // StartContainer starts a container.

@@ -43,8 +43,9 @@ const (
 type runtimeOCI struct {
 	*Runtime
 
-	path string
-	root string
+	path                         string
+	root                         string
+	privilegedWithoutHostDevices bool
 }
 
 // newRuntimeOCI creates a new runtimeOCI instance
@@ -57,6 +58,7 @@ func newRuntimeOCI(r *Runtime, handler *config.RuntimeHandler) RuntimeImpl {
 		Runtime: r,
 		path:    handler.RuntimePath,
 		root:    runRoot,
+		privilegedWithoutHostDevices: handler.PrivilegedWithoutHostDevices,
 	}
 }
 
@@ -946,4 +948,8 @@ func prepareProcessExec(c *Container, cmd []string, tty bool) (*os.File, error) 
 		return nil, err
 	}
 	return f, nil
+}
+
+func (r *runtimeOCI) PrivilegedWithoutHostDevices(c *Container) bool {
+	return r.privilegedWithoutHostDevices
 }

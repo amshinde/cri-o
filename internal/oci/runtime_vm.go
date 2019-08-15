@@ -48,7 +48,8 @@ type runtimeVM struct {
 	client *ttrpc.Client
 	task   task.TaskService
 
-	ctrs map[string]containerInfo
+	ctrs                         map[string]containerInfo
+	privilegedWithoutHostDevices bool
 }
 
 type containerInfo struct {
@@ -56,7 +57,7 @@ type containerInfo struct {
 }
 
 // newRuntimeVM creates a new runtimeVM instance
-func newRuntimeVM(path string) RuntimeImpl {
+func newRuntimeVM(path string, privilegedWithoutHostDevices bool) RuntimeImpl {
 	logrus.Debug("oci.newRuntimeVM() start")
 	defer logrus.Debug("oci.newRuntimeVM() end")
 
@@ -76,6 +77,7 @@ func newRuntimeVM(path string) RuntimeImpl {
 		path: path,
 		ctx:  context.Background(),
 		ctrs: make(map[string]containerInfo),
+		privilegedWithoutHostDevices: privilegedWithoutHostDevices,
 	}
 }
 
@@ -713,6 +715,10 @@ func (r *runtimeVM) ReopenContainerLog(c *Container) error {
 
 func (r *runtimeVM) WaitContainerStateStopped(ctx context.Context, c *Container) error {
 	return nil
+}
+
+func (r *runtimeVM) PrivilegedWithoutHostDevices(c *Container) bool {
+	return r.privilegedWithoutHostDevices
 }
 
 func (r *runtimeVM) start(ctx context.Context, ctrID, execID string) error {
